@@ -1,7 +1,6 @@
-1.
-2.
-3.
-4. How to Create KPIs and Measures:
+1. datamodel file contains a model of the data that should be created as a result of all manipulations
+
+2. How to Create KPIs and Measures:
 
 1.Open Power BI Desktop.
 2. In the "Model" view, click on "New Measure" in the ribbon.
@@ -10,18 +9,51 @@
 5. Repeat the process for each KPI or measure you want to create.
 6. Drag and drop the created measures into your report canvas to use them in visualizations.
 
-Average of Sales by Market = DIVIDE(SUM(Superstore[Profit]), SUM(Superstore[Sales]), 0)
-Average Profit by Market = AVERAGEX(VALUES(Sales[Market]), [Total Profit])
-Sum of Sales by Region = SUMX(FILTER(Sales, NOT(ISBLANK(Sales[Sales]))), Sales[Sales])
-Average Shipping Costs by Ship Mode =
-AVERAGEX(
-    VALUES(Orders[Ship Mode]),
-    CALCULATE(
-        SUM(Orders[Shipping Cost]),
-        FILTER(Orders, NOT(ISBLANK(Orders[Shipping Cost])))
-    )
+Average of Sales by State =
+AVERAGEX (
+    SUMMARIZE ( Orders, Orders[state_id] ),
+    CALCULATE ( SUM ( Orders[sales] ) )
 )
-5.
-6.
-7.
-8.
+
+Average Profit by State = AVERAGEX (
+    SUMMARIZE ( Orders, Orders[state_id] ),
+    CALCULATE ( SUM ( Orders[profit] ) )
+)
+
+Total Sales by Customer =
+CALCULATE (
+    SUM ( 'orders'[sales] ),
+    ALLEXCEPT ( 'orders', 'orders'[customer_id] )
+)
+
+Total Sales by Customer and Year = SUMX (
+        SUMMARIZE (
+            'orders',
+            'Orders'[order_date].[Год],
+            "Total Sales", SUM ( 'orders'[sales] )
+        ),
+        Orders[Total Sales by Customer]
+    )
+
+Total Sales by State =
+SUMMARIZE(
+    'Region',
+    'Region'[id],
+    'Region'[name],
+    "TotalSales", SUMX(FILTER('Orders', RELATED('State'[id]) = 'Orders'[state_id]), 'Orders'[sales])
+)
+
+--calculated table SubcategoryOrderCount
+SELECTCOLUMNS (
+    SUMMARIZECOLUMNS (
+        'products'[sub_cat_id],
+        'category'[id],
+        'category'[name],
+        'Subcategory'[name],
+        "OrderCount", COUNTROWS ( RELATEDTABLE ( 'orders' ) )
+    ),
+    "CategoryID", 'category'[id],
+    "CategoryName", 'category'[name],
+    "SubcategoryName", 'Subcategory'[name],
+    "OrderCount", [OrderCount]
+)
